@@ -3,8 +3,6 @@ export netaddr=10.10.10.0
 export node1=10.10.10.11
 export node2=10.10.10.12
 export VIP=10.10.10.30
-export IP=`ifconfig | grep 'net addr' | awk 'FNR== 1 {print $2}' | cut -d ':' -f2`
-
 echo " - - - Update package - - -"
 sleep 3
 
@@ -12,13 +10,14 @@ apt-get update -y
 echo " - - - Install DRBD  - -- "
 sleep 3
 apt-get install drbd8-utils -y
+modprobe drbd
 echo "- - - Install Pacemaker Corosync and Resource-agents"
 sleep 3
 apt-get install pacemaker crmsh corosync cluster-glue resource-agents apache2 -y
 echo " - - - Install MYSQL - - - "
 sleep 3
 apt-get install mysql-server -y
-modprobe drbd
+
 
 #start pacemaker during boot
 update-rc.d pacemaker defaults
@@ -68,6 +67,9 @@ drbdadm create-md mysql
 drbdadm create-md webdata
 drbdadm up mysql
 drbdadm up webdata
-
+mkdir /mnt/database
+mkdir /mnt/webdata
+sed -i "s\/var/lib/mysql/ r,\/mnt/database/ r,\g" /etc/apparmor.d/usr.sbin.mysqld
+sed -i "s\/var/lib/mysql/** rwk,//mnt/database/** rwk,\g" /etc/apparmor.d/usr.sbin.mysqld
 
 

@@ -421,9 +421,8 @@ service pacemaker start
 
 Khi cấu hình thành công sẽ như sau
 
-<img src="http://i.imgur.com/z0bzmIl.png">
+<img src="http://i.imgur.com/uyXsT20.png">
 
-*ở đây mình đã cấu hình xong các resource nên nó sẽ khác ở phần resources configured nếu chưa cấu hình resource nào nó sẽ là 0*
 
 ###Cấu hình DRBD ( Distributed Replicated Block Device)
 Enable module DRBD
@@ -456,13 +455,13 @@ resource mysql {
         device /dev/drbd0;
         meta-disk internal;
         on ctl1 {
-                address $node1:7789;
+                address 10.10.10.11:7789;
         }
         on ctl2 {
-                address $node2:7789;
+                address 10.10.10.12:7789;
         }
 }
-}
+
 
 ```
 
@@ -474,10 +473,10 @@ resource webdata{
 	device /dev/drbd1;
 	meta-disk internal;
 	on ctl1 {
-		address $node1:7790;
+		address 10.10.10.11:7790;
 	}
 	on ctl2{
-		address $node2:7790;
+		address 10.10.10.12:7790;
 	}
 }
 
@@ -485,7 +484,6 @@ resource webdata{
 Chạy lệnh sau trên cả 2 node để start resource 
 
 ```
-
 drbdadm create-md mysql
 drbdadm up mysql
 drbdadm create-md webdata
@@ -498,11 +496,40 @@ Lúc này dùng lệnh `cat /proc/drbd` thì cả 2 node sẽ là Secondary đ�
 drbdadm primary --force mysql
 drbdadm primary --force webdata
 ```
-Trên cả 2 node sửa file /etc/mysql/my.cnf thay đổi datadir thành /mnt/database rồi chạy lệnh
+Format định dạng cho 2 ổ
 
-`mysql_install_db --user=mysql`
+```
+mkfs.ext4 /dev/drbd0
+mkfs.ext4 /dev/drbd1
+```
+
+Trên cả 2 node sửa file /etc/mysql/my.cnf thay đổi datadir thành /mnt/database
+
+Sửa tiếp file /etc/apparmor.d/usr.sbin.mysqld từ  `/var/lib/mysql` thành `/mnt/database`
+
+Mount ổ mysql lên /mnt/database
+
+`mount /dev/drbd0 /mnt/databae`
+
+Copy dữ liệu mysql gốc sang mục này 
+
+`cp -r /var/lib/mysql /mnt/database`
+
+Set quyền cho mysql
+
+```
+chown mysql:mysql /mnt/database
+chown -R mysql:mysql /mnt/database/*
+```
+Restart lại appamor và mysql
+
+```
+service apparmor reload
+service mysql restart
+```
 
 Trên 1 node thực hiện tạo các resource Virtual IP, apache, mysql và File System
+
 
 ```
 crm configure property no-quorum-policy="ignore" stonith-enabled="false"
@@ -512,7 +539,7 @@ crm configure primitive p_drbd_mysql ocf:linbit:drbd params drbd_resource="mysql
 crm configure primitive p_drbd_data ocf:linbit:drbd params drbd_resource="webdata" op monitor interval="3s"
 crm configure primitive p_fs_data ocf:heartbeat:Filesystem params device="/dev/drbd1" directory="/mnt/web" fstype="ext4" op start interval="0s" timeout="40s" op stop interval="0s" timeout="40s" op monitor interval="3s"
 crm configure primitive p_fs_mysql ocf:heartbeat:Filesystem params device="/dev/drbd0" directory="/mnt/database" fstype="ext4" op start interval="0s" timeout="40s" op stop interval="0s" timeout="40s" op monitor interval="3s"
-crm configure primitive p_mysql ocf:heartbeat:mysql params additional_parameters="--bind-address=10.10.10.30" config="/etc/mysql/my.cnf" pid="/var/run/mysqld/mysqld.pid" socket="/var/run/mysqld/mysqld.sock" log="/var/log/mysql/mysqld.log" op monitor interval="20s" timeout="10s" op start timeout="120s" op stop timeout="120s"
+crm configure primitive p_mysql ocf:heartbeat:mysql params additional_parameters="--bind-address=10.10.10.30" config="/etc/mysql/my.cnf" pid="/var/run/mysqld/mysqld.pid" socket="/var/run/mysqld/mysqld.sock" log="/var/log/mysql/mysqld.log" datadir="/mnt/database/"op monitor interval="20s" timeout="10s" op start timeout="120s" op stop timeout="120s"
 crm configure ms ms_drbd_mysql p_drbd_mysql meta master-max="1"  master-node-max="1" clone-max="2" clone-node-max="1" notify="true"
 crm configure ms ms_drbd_data p_drbd_data meta master-max="1"  master-node-max="1" clone-max="2" clone-node-max="1" notify="true"
 crm configure colocation fs-on-drbd inf: p_fs_data ms_drbd_data:Master
