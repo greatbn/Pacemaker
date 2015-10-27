@@ -23,8 +23,6 @@ crm configure ms ms_drbd_data p_drbd_data meta master-max="1"  master-node-max="
 crm configure group FS p_fs_data p_fs_mysql 
 crm configure colocation fs-on-drbd inf: p_fs_data ms_drbd_data:Master
 crm configure colocation mysqldb-on-drbd inf: p_fs_mysql ms_drbd_mysql:Master
-crm configure colocation IP-with-drbd-mysql inf: p_IP p_fs_mysql
-crm configure colocation IP-with-drbd-data inf: p_IP p_fs_data
 crm configure colocation apache-with-IP inf: p_apache p_IP
 crm configure colocation mysql-with-IP inf: p_mysql p_IP
 crm configure order fs-after-drbd inf: ms_drbd_data:promote p_fs_data:start
