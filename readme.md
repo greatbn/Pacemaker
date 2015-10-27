@@ -531,25 +531,76 @@ service mysql restart
 Trên 1 node thực hiện tạo các resource Virtual IP, apache, mysql và File System
 
 
-```
-crm configure property no-quorum-policy="ignore" stonith-enabled="false"
-crm configure primitive p_IP ocf:heartbeat:IPaddr2 params ip="10.10.10.30" cidr_netmask="24" nic="eth0" op monitor interval="30s"
-crm configure primitive p_apache ocf:heartbeat:apache params configfile="/etc/apache2/apache2.conf" port="80" op monitor interval="30s" op start interval="0s" timeout="40s" op stop interval="0s" timeout="40s"
-crm configure primitive p_drbd_mysql ocf:linbit:drbd params drbd_resource="mysql" op monitor interval="3s"
-crm configure primitive p_drbd_data ocf:linbit:drbd params drbd_resource="webdata" op monitor interval="3s"
-crm configure primitive p_fs_data ocf:heartbeat:Filesystem params device="/dev/drbd1" directory="/mnt/web" fstype="ext4" op start interval="0s" timeout="40s" op stop interval="0s" timeout="40s" op monitor interval="3s"
-crm configure primitive p_fs_mysql ocf:heartbeat:Filesystem params device="/dev/drbd0" directory="/mnt/database" fstype="ext4" op start interval="0s" timeout="40s" op stop interval="0s" timeout="40s" op monitor interval="3s"
-crm configure primitive p_mysql ocf:heartbeat:mysql params additional_parameters="--bind-address=10.10.10.30" config="/etc/mysql/my.cnf" pid="/var/run/mysqld/mysqld.pid" socket="/var/run/mysqld/mysqld.sock" log="/var/log/mysql/mysqld.log" datadir="/mnt/database/"op monitor interval="20s" timeout="10s" op start timeout="120s" op stop timeout="120s"
-crm configure ms ms_drbd_mysql p_drbd_mysql meta master-max="1"  master-node-max="1" clone-max="2" clone-node-max="1" notify="true"
-crm configure ms ms_drbd_data p_drbd_data meta master-max="1"  master-node-max="1" clone-max="2" clone-node-max="1" notify="true"
-crm configure colocation fs-on-drbd inf: p_fs_data ms_drbd_data:Master
-crm configure colocation mysqldb-on-drbd inf: p_fs_mysql ms_drbd_mysql:Master
-crm configure colocation IP-with-drbd-mysql inf: p_IP p_fs_mysql
-crm configure colocation IP-with-drbd-data inf: p_IP p_fs_data
-crm configure colocation apache-with-IP inf: apache p_IP
-crm configure colocation mysql-with-IP inf: p_mysql p_IP
-crm configure order fs-after-drbd inf: ms_drbd_data:promote p_fs_data:start
-crm configure order mysql-after-drbd inf: ms_drbd_mysql:promote p_fs_mysql:start
+
+`crm configure property no-quorum-policy="ignore" stonith-enabled="false"`
+
+ignore quorum và tắt stonith do mô hình của mình chỉ có 2 node. từ 3 node trở lên mới cần quorum hoặc STONITH để giải quyết split brain
+
+`crm configure primitive p_IP ocf:heartbeat:IPaddr2 params ip="10.10.10.30" cidr_netmask="24" nic="eth0" op monitor interval="30s"`
+
+Tạo Virtual IP có địa chỉ 10.10.10.30/24 nằm trên card eth0
+
+`crm configure primitive p_apache ocf:heartbeat:apache params configfile="/etc/apache2/apache2.conf" port="80" op monitor interval="30s" op start interval="0s" timeout="40s" op stop interval="0s" timeout="40s"``
+
+Tạo resource apache để pacemaker manage apache
+
+`crm configure primitive p_drbd_mysql ocf:linbit:drbd params drbd_resource="mysql" op monitor interval="3s"`
+
+Tạo resource DRBD cho MySQL
+
+`crm configure primitive p_drbd_data ocf:linbit:drbd params drbd_resource="webdata" op monitor interval="3s"`
+
+Tạo resource DRBD cho Dữ liệu web (source code)
+
+`crm configure primitive p_fs_data ocf:heartbeat:Filesystem params device="/dev/drbd1" directory="/mnt/web" fstype="ext4" op start interval="0s" timeout="40s" op stop interval="0s" timeout="40s" op monitor interval="3s"`
+
+Mount webdata tại /mnt/web. Khi cấu hình apache thì trỏ document root về thư mục này 
+
+`crm configure primitive p_fs_mysql ocf:heartbeat:Filesystem params device="/dev/drbd0" directory="/mnt/database" fstype="ext4" op start interval="0s" timeout="40s" op stop interval="0s" timeout="40s" op monitor interval="3s"`
+
+Mount dữ liệu Mysql về thư mục /mnt/database 
+
+`crm configure primitive p_mysql ocf:heartbeat:mysql params additional_parameters="--bind-address=10.10.10.30" config="/etc/mysql/my.cnf" pid="/var/run/mysqld/mysqld.pid" socket="/var/run/mysqld/mysqld.sock" log="/var/log/mysql/mysqld.log" datadir="/mnt/database/"op monitor interval="20s" timeout="10s" op start timeout="120s" op stop timeout="120s"`
+
+Tạo resource mysql để pacemaker quản lý
+
+`crm configure ms ms_drbd_mysql p_drbd_mysql meta master-max="1"  master-node-max="1" clone-max="2" clone-node-max="1" notify="true"`
+
+Tạo Master/Slave DRBD MySQL
+
+`crm configure ms ms_drbd_data p_drbd_data meta master-max="1"  master-node-max="1" clone-max="2" clone-node-max="1" notify="true"`
+
+Tạo Master/Slave DRBD Webdata
+
+`crm configure colocation fs-on-drbd inf: p_fs_data ms_drbd_data:Master`
+
+`crm configure colocation mysqldb-on-drbd inf: p_fs_mysql ms_drbd_mysql:Master`
+
+Mount DRBD trên Master
+
+`crm configure colocation IP-with-drbd-mysql inf: p_IP p_fs_mysql`
+
+Địa chỉ IP nằm trên DRBD MySQL
+
+`crm configure colocation IP-with-drbd-data inf: p_IP p_fs_data`
+
+Địa chỉ IP cũng nằm trên DRBD Webdata
+
+`crm configure colocation apache-with-IP inf: apache p_IP`
+
+apache start trên node đặt địa chỉ IP
+
+`crm configure colocation mysql-with-IP inf: p_mysql p_IP`
+
+MySQL-Server Start trên node đặt địa chỉ IP
+
+`crm configure order fs-after-drbd inf: ms_drbd_data:promote p_fs_data:start`
+
+Mount sau khi start DRBD webdata
+
+`crm configure order mysql-after-drbd inf: ms_drbd_mysql:promote p_fs_mysql:start`
+
+Mount sau khi start DRBD MySQL
 
 ```
 
