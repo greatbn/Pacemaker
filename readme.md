@@ -578,15 +578,15 @@ Tạo Master/Slave DRBD Webdata
 
 Mount DRBD trên Master
 
-`crm configure colocation IP-with-drbd-mysql inf: p_IP p_fs_mysql`
+`crm configure group FS p_fs_data p_fs_mysql`
 
-Địa chỉ IP nằm trên DRBD MySQL
+Group 2 FS để start trên cùng 1 node
 
-`crm configure colocation IP-with-drbd-data inf: p_IP p_fs_data`
+`crm configure IP-with-FS inf: p_IP FS`
 
-Địa chỉ IP cũng nằm trên DRBD Webdata
+Đặt địa chỉ IP trên node start group FS
 
-`crm configure colocation apache-with-IP inf: apache p_IP`
+`crm configure colocation apache-with-IP inf: p_apache p_IP`
 
 apache start trên node đặt địa chỉ IP
 

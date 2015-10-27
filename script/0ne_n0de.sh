@@ -20,11 +20,12 @@ crm configure primitive p_fs_mysql ocf:heartbeat:Filesystem params device="/dev/
 crm configure primitive p_mysql ocf:heartbeat:mysql params additional_parameters="--bind-address=$VIP" config="/etc/mysql/my.cnf" pid="/var/run/mysqld/mysqld.pid" socket="/var/run/mysqld/mysqld.sock" log="/var/log/mysql/mysqld.log" op monitor interval="20s" timeout="10s" op start timeout="120s" op stop timeout="120s"
 crm configure ms ms_drbd_mysql p_drbd_mysql meta master-max="1"  master-node-max="1" clone-max="2" clone-node-max="1" notify="true"
 crm configure ms ms_drbd_data p_drbd_data meta master-max="1"  master-node-max="1" clone-max="2" clone-node-max="1" notify="true"
+crm configure group FS p_fs_data p_fs_mysql 
 crm configure colocation fs-on-drbd inf: p_fs_data ms_drbd_data:Master
 crm configure colocation mysqldb-on-drbd inf: p_fs_mysql ms_drbd_mysql:Master
 crm configure colocation IP-with-drbd-mysql inf: p_IP p_fs_mysql
 crm configure colocation IP-with-drbd-data inf: p_IP p_fs_data
-crm configure colocation apache-with-IP inf: apache p_IP
+crm configure colocation apache-with-IP inf: p_apache p_IP
 crm configure colocation mysql-with-IP inf: p_mysql p_IP
 crm configure order fs-after-drbd inf: ms_drbd_data:promote p_fs_data:start
 crm configure order mysql-after-drbd inf: ms_drbd_mysql:promote p_fs_mysql:start
