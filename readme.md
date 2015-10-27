@@ -602,9 +602,7 @@ Mount sau khi start DRBD webdata
 
 Mount sau khi start DRBD MySQL
 
-```
-
-Sau khi xong reboot lại máy kiểm tra crm_mon
+###Sau khi xong reboot lại máy kiểm tra crm_mon
 
 
 
