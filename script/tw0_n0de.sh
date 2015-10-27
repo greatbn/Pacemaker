@@ -71,5 +71,7 @@ mkdir /mnt/database
 mkdir /mnt/webdata
 sed -i "s\/var/lib/mysql/ r,\/mnt/database/ r,\g" /etc/apparmor.d/usr.sbin.mysqld
 sed -i "s\/var/lib/mysql/** rwk,//mnt/database/** rwk,\g" /etc/apparmor.d/usr.sbin.mysqld
+sed -i "s\/var/lib/mysql\/mnt/database\g" /etc/mysql/my.cnf
+
 
 
