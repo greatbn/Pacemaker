@@ -1,5 +1,20 @@
 ﻿#Pacemaker
-
+[1. Cluster là gì](https://github.com/greatbn/Pacemaker#1-cluster-là-gì)
+[2. Mô hình triển khai](https://github.com/greatbn/Pacemaker#2-mô-hình-triển-khai)
+	[2.1 High Performance Cluster(HPC)](https://github.com/greatbn/Pacemaker#21-high-performance-clusterhpc)
+	[2.2 Load Balancing Cluster (LBC)](https://github.com/greatbn/Pacemaker#22-load-balancing-cluster-lbc)
+	[2.3 High Availabality Cluster (HAC)](https://github.com/greatbn/Pacemaker#23-high-availabality-cluster-hac)
+[3. Lịch sử của HAC trong Linux](https://github.com/greatbn/Pacemaker#3-lịch-sử-của-hac-trong-linux)
+[4. Các thành phần trong HAC](https://github.com/greatbn/Pacemaker#4-các-thành-phần-trong-hac)
+[5. Kiến trúc Pacemaker](https://github.com/greatbn/Pacemaker#5-kiến-trúc-pacemaker)
+	[5.1 Cluster Information Base (CIB)](https://github.com/greatbn/Pacemaker#51-cluster-information-base-cib)
+	[5.2 CRMD](https://github.com/greatbn/Pacemaker#52crmd)
+	[5.3 PEngine.](https://github.com/greatbn/Pacemaker#53-pengine)
+	[5.4 LRMD ](https://github.com/greatbn/Pacemaker#54-lrmd)
+	[5.5 STONITH](https://github.com/greatbn/Pacemaker#55-stonithfenced)
+[6. Vấn dề xảy ra trong Cluster](https://github.com/greatbn/Pacemaker#6-vấn-dề-xảy-ra-trong-cluster)
+[7.Cài đặt](https://github.com/greatbn/Pacemaker#7cài-đặt)
+[8. Cấu hình](https://github.com/greatbn/Pacemaker#8-cấu-hình)
 ##1. Cluster là gì
 
 - Cluster là một kiến trúc nhằm đảm bảo nâng cao khả năng sẵn sàng cho các hệ thống mạng máy tính
@@ -304,7 +319,7 @@ root@ctl1:/home/saphi# cibadmin -Q
 
 - Nó tạo ra một danh sách các hướng dẫn được gửi tới crmd. Cách tốt nhất để 1 admin tác động tới hành vi của pengine là đinh nghĩa những hạn chế trong cluster.
 
-###5.4. lrmd 
+###5.4 LRMD 
 
 - Local resource management daemon là một phần của cluster được chạy trên mỗi node của cluster.
  
@@ -602,8 +617,9 @@ Mount sau khi start DRBD webdata
 
 Mount sau khi start DRBD MySQL
 
-###Sau khi xong reboot lại máy kiểm tra crm_mon
+###Sau khi xong reboot lại máy kiểm tra crm_mon sẽ được kết quả như này
 
+<img src="http://i.imgur.com/D2qo8EC.png">
 
 
 
