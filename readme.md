@@ -3,11 +3,11 @@
 
 [2. Mô hình triển khai](https://github.com/greatbn/Pacemaker#2-mô-hình-triển-khai)
 
-	- [2.1 High Performance Cluster(HPC)](https://github.com/greatbn/Pacemaker#21-high-performance-clusterhpc)
+- [2.1 High Performance Cluster(HPC)](https://github.com/greatbn/Pacemaker#21-high-performance-clusterhpc)
 	
-	- [2.2 Load Balancing Cluster (LBC)](https://github.com/greatbn/Pacemaker#22-load-balancing-cluster-lbc)
+- [2.2 Load Balancing Cluster (LBC)](https://github.com/greatbn/Pacemaker#22-load-balancing-cluster-lbc)
 	
-	- [2.3 High Availabality Cluster (HAC)](https://github.com/greatbn/Pacemaker#23-high-availabality-cluster-hac)
+- [2.3 High Availabality Cluster (HAC)](https://github.com/greatbn/Pacemaker#23-high-availabality-cluster-hac)
 	
 [3. Lịch sử của HAC trong Linux](https://github.com/greatbn/Pacemaker#3-lịch-sử-của-hac-trong-linux)
 
@@ -15,15 +15,15 @@
 
 [5. Kiến trúc Pacemaker](https://github.com/greatbn/Pacemaker#5-kiến-trúc-pacemaker)
 
-	- [5.1 Cluster Information Base (CIB)](https://github.com/greatbn/Pacemaker#51-cluster-information-base-cib)
+- [5.1 Cluster Information Base (CIB)](https://github.com/greatbn/Pacemaker#51-cluster-information-base-cib)
 	
-	- [5.2 CRMD](https://github.com/greatbn/Pacemaker#52crmd)
+- [5.2 CRMD](https://github.com/greatbn/Pacemaker#52crmd)
 	
-	- [5.3 PEngine.](https://github.com/greatbn/Pacemaker#53-pengine)
+- [5.3 PEngine.](https://github.com/greatbn/Pacemaker#53-pengine)
 	
-	- [5.4 LRMD ](https://github.com/greatbn/Pacemaker#54-lrmd)
+- [5.4 LRMD ](https://github.com/greatbn/Pacemaker#54-lrmd)
 	
-	- [5.5 STONITH](https://github.com/greatbn/Pacemaker#55-stonithfenced)
+- [5.5 STONITH](https://github.com/greatbn/Pacemaker#55-stonithfenced)
 	
 [6. Vấn dề xảy ra trong Cluster](https://github.com/greatbn/Pacemaker#6-vấn-dề-xảy-ra-trong-cluster)
 
