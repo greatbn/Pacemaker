@@ -1,6 +1,7 @@
 export VIP=10.10.10.30
 #on one node
-drbdadm primary --force drbd0
+drbdadm primary --force mysql
+drbdadm primary --force webdata
 #config cluster
 #Thuc hien tren 1 node
 crm configure property no-quorum-policy="ignore" stonith-enabled="false"

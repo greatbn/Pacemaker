@@ -80,15 +80,20 @@
 
 <img src="http://i.imgur.com/N0xAZUw.png">
 
-	- Resource agents:  Pacemaker là một phần của cluster, có trách nhiệm quản lý các tài nguyên. Để quản lý tài nguyên, Resource agent được sử dụng. Một resource agent là một script mà cluster sử dụng để start, stop và monitor resource. Nó có thể so sánh với systemctl hoặc 1 script chạy có mức độ. Nhưng nó được điều chỉnh để sử dụng trong cluster. Nó cũng định nghĩa các thuộc tính có thể quản lý bởi cluster. Đối với 1 admin, Nó rất quan trọng để biết được thuộc tính nào có thể sử dụng trước khi bắt đầu cấu hình resources. 
+- Resource agents:  
+     - Pacemaker là một phần của cluster, có trách nhiệm quản lý các tài nguyên. 
+	 - Để quản lý tài nguyên, Resource agent được sử dụng. 
+	 - Một resource agent là một script mà cluster sử dụng để start, stop và monitor resource. Nó có thể so sánh với systemctl hoặc 1 script chạy có mức độ. Nhưng nó được điều chỉnh để sử dụng trong cluster. Nó cũng định nghĩa các thuộc tính có thể quản lý bởi cluster. Đối với 1 admin, Nó rất quan trọng để biết được thuộc tính nào có thể sử dụng trước khi bắt đầu cấu hình resources. 
 	
-	- Corosync:  Corosync là một layer có nhiệm vụ quản lý các node thành viên.
-     Nó cũng được cấu hình để giao tiếp với pacemaker.
-     Pacemaker nhận update về những sự thay đổi trạng thái của các node trong cluster. Dựa vào đó nó có thể bắt đầu một sự kiện nào đó ví dụ như migrate resource
+- Corosync:  
+     - Corosync là một layer có nhiệm vụ quản lý các node thành viên.
+     - Nó cũng được cấu hình để giao tiếp với pacemaker.
+     - Pacemaker nhận update về những sự thay đổi trạng thái của các node trong cluster. Dựa vào đó nó có thể bắt đầu một sự kiện nào đó ví dụ như migrate resource
 	
-	- Storage layer:  Pacemaker cũng được sử dụng để quản lý các thiết bị lưu trữ.
-     Một quản lý khóa phân phối (Distribute Lock Manage DLM) cần phải có. DLM quản lý việc đồng bộ hóa các khóa giữa các nodes.
-     Nó đặc biệt quan trọng nếu là share storage như là cLVM2 cluster logical volume hoặc GFS2 và OCFS2 cluster file system.
+- Storage layer:  
+	 - Pacemaker cũng được sử dụng để quản lý các thiết bị lưu trữ.
+     - Một quản lý khóa phân phối (Distribute Lock Manage DLM) cần phải có. DLM quản lý việc đồng bộ hóa các khóa giữa các nodes.
+     - Nó đặc biệt quan trọng nếu là share storage như là cLVM2 cluster logical volume hoặc GFS2 và OCFS2 cluster file system.
 	
 ##5. Kiến trúc Pacemaker
 
@@ -340,6 +345,7 @@ Việc chỉ cho một node sở hữu quorum resource là rất quan trọng b�
 - Có thể thấy pacemaker chỉ là 1 thành phần để quản lý các resource nên khi cài đặt chúng ta phải cài đặt cùng với các thành phần khác để nó có thể hoạt động được 
 
 - Trên ubuntu chạy lệnh sau, sau khi update
+
 `sudo apt-get install pacemaker corosync crmsh cluster-glue resource-agents - y`
 
 - Trên centos chạy lệnh sau
@@ -355,7 +361,7 @@ Việc chỉ cho một node sở hữu quorum resource là rất quan trọng b�
 - Mô hình 
 
 
-< img src="http://i.imgur.com/TiKS7Eh.png">
+<img src="http://i.imgur.com/GGXtGpm.png">
 
 
 - Mình thực hiện trên Ubuntu Server 14.04 khi chạy centos các lệnh có thể sẽ khác các bạn tìm hiểu thêm
@@ -428,47 +434,104 @@ Kiểm tra module đã được bật chưa
 
 `lsmod | grep drbd`
 
-Trước hết bạn cần phải có thêm 1 ổ cứng hoặc 1 phân vùng trống
+Trước hết bạn cần phải có thêm 1 ổ cứng hoặc 2 phân vùng trống
 
 
-Mình sẽ tạo 1 phân vùng mới trên 1 ổ cứng mình lắp thêm
+Mình sẽ tạo 2 phân vùng mới trên 1 ổ cứng mình lắp thêm
 
 Chạy lệnh sau 
 
-`echo -e "o\nn\np\n1\n\n\nw" | fdisk /dev/sdb`
+`echo -e "o\nn\np\n\n\n+2000MB\nn\np\n2\n\n\n\nw" | fdisk /dev/sdb`
 
-Tạo resource cho DRBD ở đây mình tạo resource là drbd0
+Tạo resource cho DRBD ở đây mình tạo resource là mysql và webdata
 
-Tạo file drbd0.res tại /etc/drbd.d/drbd0.res với nội dung sau trên cả 2 node
+Tạo file mysql.res và webdata.res tại /etc/drbd.d/với nội dung sau trên cả 2 node
+
+- mysql.res
 
 ```
 
-resource drbd0 {
-        disk /dev/sdb;
+resource mysql {
+        disk /dev/sdb1;
         device /dev/drbd0;
         meta-disk internal;
-        on node01 {
-                address 10.10.10.11:7789;
+        on ctl1 {
+                address $node1:7789;
         }
-        on node02 {
-                address 10.10.10.12:7789;
+        on ctl2 {
+                address $node2:7789;
         }
+}
 }
 
 ```
 
+-webdata.res
+
+```
+resource webdata{
+	disk /dev/sdb2;
+	device /dev/drbd1;
+	meta-disk internal;
+	on ctl1 {
+		address $node1:7790;
+	}
+	on ctl2{
+		address $node2:7790;
+	}
+}
+
+```
 Chạy lệnh sau trên cả 2 node để start resource 
 
 ```
 
-drbdadm create-md drbd0
-drbdadm up drbd0
-
+drbdadm create-md mysql
+drbdadm up mysql
+drbdadm create-md webdata
+drbdadm up webdata
 ```
 
 Lúc này dùng lệnh `cat /proc/drbd` thì cả 2 node sẽ là Secondary để 1 node là Primary thì trên node đó ta chạy lệnh sau
 
-drbdadm primary --force drbd0
+```
+drbdadm primary --force mysql
+drbdadm primary --force webdata
+```
+Trên cả 2 node sửa file /etc/mysql/my.cnf thay đổi datadir thành /mnt/database rồi chạy lệnh
+
+`mysql_install_db --user=mysql`
+
+Trên 1 node thực hiện tạo các resource Virtual IP, apache, mysql và File System
+
+```
+crm configure property no-quorum-policy="ignore" stonith-enabled="false"
+crm configure primitive p_IP ocf:heartbeat:IPaddr2 params ip="10.10.10.30" cidr_netmask="24" nic="eth0" op monitor interval="30s"
+crm configure primitive p_apache ocf:heartbeat:apache params configfile="/etc/apache2/apache2.conf" port="80" op monitor interval="30s" op start interval="0s" timeout="40s" op stop interval="0s" timeout="40s"
+crm configure primitive p_drbd_mysql ocf:linbit:drbd params drbd_resource="mysql" op monitor interval="3s"
+crm configure primitive p_drbd_data ocf:linbit:drbd params drbd_resource="webdata" op monitor interval="3s"
+crm configure primitive p_fs_data ocf:heartbeat:Filesystem params device="/dev/drbd1" directory="/mnt/web" fstype="ext4" op start interval="0s" timeout="40s" op stop interval="0s" timeout="40s" op monitor interval="3s"
+crm configure primitive p_fs_mysql ocf:heartbeat:Filesystem params device="/dev/drbd0" directory="/mnt/database" fstype="ext4" op start interval="0s" timeout="40s" op stop interval="0s" timeout="40s" op monitor interval="3s"
+crm configure primitive p_mysql ocf:heartbeat:mysql params additional_parameters="--bind-address=10.10.10.30" config="/etc/mysql/my.cnf" pid="/var/run/mysqld/mysqld.pid" socket="/var/run/mysqld/mysqld.sock" log="/var/log/mysql/mysqld.log" op monitor interval="20s" timeout="10s" op start timeout="120s" op stop timeout="120s"
+crm configure ms ms_drbd_mysql p_drbd_mysql meta master-max="1"  master-node-max="1" clone-max="2" clone-node-max="1" notify="true"
+crm configure ms ms_drbd_data p_drbd_data meta master-max="1"  master-node-max="1" clone-max="2" clone-node-max="1" notify="true"
+crm configure colocation fs-on-drbd inf: p_fs_data ms_drbd_data:Master
+crm configure colocation mysqldb-on-drbd inf: p_fs_mysql ms_drbd_mysql:Master
+crm configure colocation IP-with-drbd-mysql inf: p_IP p_fs_mysql
+crm configure colocation IP-with-drbd-data inf: p_IP p_fs_data
+crm configure colocation apache-with-IP inf: apache p_IP
+crm configure colocation mysql-with-IP inf: p_mysql p_IP
+crm configure order fs-after-drbd inf: ms_drbd_data:promote p_fs_data:start
+crm configure order mysql-after-drbd inf: ms_drbd_mysql:promote p_fs_mysql:start
+
+```
+
+Sau khi xong reboot lại máy kiểm tra crm_mon
+
+
+
+
+
 
 
 
