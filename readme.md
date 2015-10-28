@@ -396,7 +396,7 @@ Việc chỉ cho một node sở hữu quorum resource là rất quan trọng b�
 <img src="http://i.imgur.com/GGXtGpm.png">
 
 
-- Mình thực hiện trên Ubuntu Server 14.04 khi chạy centos các lệnh có thể sẽ khác các bạn tìm hiểu thêm
+- Mình thực hiện trên **Ubuntu Server 14.04** khi chạy centos các lệnh có thể sẽ khác các bạn tìm hiểu thêm
 
 - Sửa file hosts của cả 2 node
 
@@ -409,7 +409,7 @@ cat << EOF > /etc/hosts
 EOF
 
 ```
-###Cài đặt các package cần thiết , chạy lần lượt các lệnh sau
+###Cài đặt các package cần thiết , chạy lần lượt các lệnh sau trên cả 2 node
 
 ```
 
@@ -419,7 +419,7 @@ apt-get install pacemaker crmsh corosync cluster-glue resource-agents apache2 ma
 
 ```
 
-- Để khởi động corosync và pacemaker cùng hệ thống chạy 2 lệnh sau
+- Để khởi động corosync và pacemaker cùng hệ thống chạy 2 lệnh sau trên cả 2 node
 
 ```
 
@@ -428,7 +428,7 @@ update-rc.d corosync defaults
 
 ```
 
-- Mặc định corosync không được chạy do vậy ta cần chỉnh sửa file defaults của nó 
+- Mặc định corosync không được chạy do vậy ta cần chỉnh sửa file defaults của nó trên cả 2 node
 
 `sed -i "s/START=no/START=yes/g" /etc/default/corosync`
 
@@ -456,8 +456,8 @@ Khi cấu hình thành công sẽ như sau
 <img src="http://i.imgur.com/uyXsT20.png">
 
 
-###Cấu hình DRBD ( Distributed Replicated Block Device)
-Enable module DRBD
+###Cấu hình DRBD ( Distributed Replicated Block Device) trên cả 2 node
+Enable module DRBD trên cả 2 node
 
 `modprobe drbd`
 
@@ -468,7 +468,7 @@ Kiểm tra module đã được bật chưa
 Trước hết bạn cần phải có thêm 1 ổ cứng hoặc 2 phân vùng trống
 
 
-Mình sẽ tạo 2 phân vùng mới trên 1 ổ cứng mình lắp thêm
+Mình sẽ tạo 2 phân vùng mới trên 1 ổ cứng mình lắp thêm thực hiện trên cả 2 node
 
 Chạy lệnh sau 
 
@@ -513,7 +513,15 @@ resource webdata{
 }
 
 ```
-Chạy lệnh sau trên cả 2 node để start resource 
+
+Format định dạng cho 2 ổ thực hiện trên cả 2 node
+
+```
+mkfs.ext4 /dev/drbd0
+mkfs.ext4 /dev/drbd1
+```
+
+Chạy lệnh sau trên cả 2 node để start resource DRBD
 
 ```
 drbdadm create-md mysql
@@ -528,22 +536,17 @@ Lúc này dùng lệnh `cat /proc/drbd` thì cả 2 node sẽ là Secondary đ�
 drbdadm primary --force mysql
 drbdadm primary --force webdata
 ```
-Format định dạng cho 2 ổ
 
-```
-mkfs.ext4 /dev/drbd0
-mkfs.ext4 /dev/drbd1
-```
 
 Trên cả 2 node sửa file /etc/mysql/my.cnf thay đổi datadir thành /mnt/database
 
 Sửa tiếp file /etc/apparmor.d/usr.sbin.mysqld từ  `/var/lib/mysql` thành `/mnt/database`
 
-Mount ổ mysql lên /mnt/database
+Mount ổ mysql lên /mnt/database trên node primary node còn lại cũng tương tự nhưng phải đổi lại primary thành node đó rồi mount
 
 `mount /dev/drbd0 /mnt/databae`
 
-Copy dữ liệu mysql gốc sang mục này 
+Copy dữ liệu mysql gốc sang mục này chỉ cần thực hiện trên 1 node
 
 `cp -r /var/lib/mysql /mnt/database`
 
@@ -553,7 +556,7 @@ Set quyền cho mysql
 chown mysql:mysql /mnt/database
 chown -R mysql:mysql /mnt/database/*
 ```
-Restart lại appamor và mysql
+Restart lại appamor và mysql trên cả 2 node
 
 ```
 service apparmor reload
@@ -637,6 +640,26 @@ Mount sau khi start DRBD MySQL
 ###Sau khi xong reboot lại máy kiểm tra crm_mon sẽ được kết quả như này
 
 <img src="http://i.imgur.com/D2qo8EC.png">
+
+Test thử power off node 1 thì resource sẽ start trên node 1
+
+<img src="http://i.imgur.com/ILOrgXp.png">
+
+Để dữ liệu được đồng bộ giữa 2 node đầy đủ thì ta cần cấu hình cho các resource không được di chuyển sang node khác khi node đó được phục hồi
+
+`crm configure rsc_defaults resource-stickiness=100`
+
+- - -
+
+#Tổng Kết
+
+Bài viết trên mình đã giới thiệu tổng quan về Pacemaker và cách cấu hình nó. Để cấu hình 1 cluster không phải là dễ, nó rất khó bởi vì chỉ cần cấu hình 1 resource không đúng hoặc thứ tự start không đúng thì cluster sẽ không thể chạy theo đúng yêu cầu đặt ra được. Do vậy bài viết có gì sai xót mong các bạn góp ý
+
+**Người viết: Sa Phi**
+
+*Email: saphi070@gmail.com*
+
+
 
 
 
