@@ -385,6 +385,19 @@ Việc chỉ cho một node sở hữu quorum resource là rất quan trọng b�
 
 ##8. Cấu hình
 
+- Chuẩn bị 2 Server có cấu hình tương đương:
+
+-  OS: Ubuntu Server 14.04
+
+-  CPU 1 core
+
+-  RAM: 1GB
+ 
+-  HDD 1: 20GB
+
+- HDD 2: 5GB
+
+
 - Mục này mình sẽ hướng dẫn xây dựng 1 cluster chạy web apache có thư mục source code và Database được đồng bộ giữa 2 node với nhau sử dụng DRBD 
 
 - Trên 2 node sẽ cắm thêm 1 ổ cứng để thực hiện đồng bộ các file
