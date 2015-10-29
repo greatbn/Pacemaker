@@ -392,7 +392,7 @@ Việc chỉ cho một node sở hữu quorum resource là rất quan trọng b�
 - Mô hình 
 
 
-<img src="http://i.imgur.com/GGXtGpm.png">
+<img src="http://i.imgur.com/l2dYp5J.png">
 
 
 - Mình thực hiện trên **Ubuntu Server 14.04** khi chạy centos các lệnh có thể sẽ khác các bạn tìm hiểu thêm
