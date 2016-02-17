@@ -577,80 +577,80 @@ service mysql restart
 
 Trên 1 node thực hiện tạo các resource Virtual IP, apache, mysql và File System
 
-
+- ignore quorum và tắt stonith do mô hình của mình chỉ có 2 node. từ 3 node trở lên mới cần quorum hoặc STONITH để giải quyết split brain
 
 `crm configure property no-quorum-policy="ignore" stonith-enabled="false"`
 
-ignore quorum và tắt stonith do mô hình của mình chỉ có 2 node. từ 3 node trở lên mới cần quorum hoặc STONITH để giải quyết split brain
+
+- Tạo Virtual IP có địa chỉ 10.10.10.30/24 nằm trên card eth0
 
 `crm configure primitive p_IP ocf:heartbeat:IPaddr2 params ip="10.10.10.30" cidr_netmask="24" nic="eth0" op monitor interval="30s"`
 
-Tạo Virtual IP có địa chỉ 10.10.10.30/24 nằm trên card eth0
 
-`crm configure primitive p_apache ocf:heartbeat:apache params configfile="/etc/apache2/apache2.conf" port="80" op monitor interval="30s" op start interval="0s" timeout="40s" op stop interval="0s" timeout="40s"``
 
-Tạo resource apache để pacemaker manage apache
 
-`crm configure primitive p_drbd_mysql ocf:linbit:drbd params drbd_resource="mysql" op monitor interval="3s"`
+####Cấu hình DRBD Resource
 
-Tạo resource DRBD cho MySQL
+#####MySQL
 
-`crm configure primitive p_drbd_data ocf:linbit:drbd params drbd_resource="webdata" op monitor interval="3s"`
+- Tại shell gõ `crm`
+ 
+```
 
-Tạo resource DRBD cho Dữ liệu web (source code)
+cib new mysql
+configure primitive p_drbd_mysql ocf:linbit:drbd params drbd_resource="mysql" op monitor interval="3s"
+configure primitive p_fs_mysql ocf:heartbeat:Filesystem params device="/dev/drbd0" directory="/mnt/database" fstype="ext4" op start interval="0s" timeout="40s" op stop interval="0s" timeout="40s" op monitor interval="3s"
+configure ms ms_drbd_mysql p_drbd_mysql meta master-max="1"  master-node-max="1" clone-max="2" clone-node-max="1" notify="true"
+configure colocation mysql-with-IP inf: p_mysql p_IP
+configure order mysql-after-drbd inf: ms_drbd_mysql:promote p_fs_mysql:start
+configure colocation mysqldb-on-drbd inf: p_fs_mysql ms_drbd_mysql:Master
+cib commit mysql
 
-`crm configure primitive p_fs_data ocf:heartbeat:Filesystem params device="/dev/drbd1" directory="/mnt/web" fstype="ext4" op start interval="0s" timeout="40s" op stop interval="0s" timeout="40s" op monitor interval="3s"`
+```
 
-Mount webdata tại /mnt/web. Khi cấu hình apache thì trỏ document root về thư mục này 
+#####Data Web
 
-`crm configure primitive p_fs_mysql ocf:heartbeat:Filesystem params device="/dev/drbd0" directory="/mnt/database" fstype="ext4" op start interval="0s" timeout="40s" op stop interval="0s" timeout="40s" op monitor interval="3s"`
+- Tại shell gõ `crm`
 
-Mount dữ liệu Mysql về thư mục /mnt/database 
+```
+configure primitive p_drbd_data ocf:linbit:drbd params drbd_resource="webdata" op monitor interval="3s"
+configure primitive p_fs_data ocf:heartbeat:Filesystem params device="/dev/drbd1" directory="/mnt/web" fstype="ext4" op start interval="0s" timeout="40s" op stop interval="0s" timeout="40s" op monitor interval="3s
+configure ms ms_drbd_data p_drbd_data meta master-max="1"  master-node-max="1" clone-max="2" clone-node-max="1" notify="true"
+configure order fs-after-drbd inf: ms_drbd_data:promote p_fs_data:start
+configure colocation fs-on-drbd inf: p_fs_data ms_drbd_data:Master
 
-`crm configure primitive p_mysql ocf:heartbeat:mysql params additional_parameters="--bind-address=10.10.10.30" config="/etc/mysql/my.cnf" pid="/var/run/mysqld/mysqld.pid" socket="/var/run/mysqld/mysqld.sock" log="/var/log/mysql/mysqld.log" datadir="/mnt/database/"op monitor interval="20s" timeout="10s" op start timeout="120s" op stop timeout="120s"`
+
+```
+
 
 Tạo resource mysql để pacemaker quản lý
 
-`crm configure ms ms_drbd_mysql p_drbd_mysql meta master-max="1"  master-node-max="1" clone-max="2" clone-node-max="1" notify="true"`
+`crm configure primitive p_mysql ocf:heartbeat:mysql params additional_parameters="--bind-address=10.10.10.30" config="/etc/mysql/my.cnf" pid="/var/run/mysqld/mysqld.pid" socket="/var/run/mysqld/mysqld.sock" log="/var/log/mysql/mysqld.log" datadir="/mnt/database/"op monitor interval="20s" timeout="10s" op start timeout="120s" op stop timeout="120s"`
 
-Tạo Master/Slave DRBD MySQL
 
-`crm configure ms ms_drbd_data p_drbd_data meta master-max="1"  master-node-max="1" clone-max="2" clone-node-max="1" notify="true"`
+- Tạo resource apache để pacemaker manage apache
 
-Tạo Master/Slave DRBD Webdata
+`crm configure primitive p_apache ocf:heartbeat:apache params configfile="/etc/apache2/apache2.conf" port="80" op monitor interval="30s" op start interval="0s" timeout="40s" op stop interval="0s" timeout="40s"``
 
-`crm configure colocation fs-on-drbd inf: p_fs_data ms_drbd_data:Master`
 
-`crm configure colocation mysqldb-on-drbd inf: p_fs_mysql ms_drbd_mysql:Master`
-
-Mount DRBD trên Master
+- Group 2 FS để start trên cùng 1 node
 
 `crm configure group FS p_fs_data p_fs_mysql`
 
-Group 2 FS để start trên cùng 1 node
+
+- Đặt địa chỉ IP trên node start group FS
 
 `crm configure IP-with-FS inf: p_IP FS`
 
-Đặt địa chỉ IP trên node start group FS
 
+
+- apache start trên node đặt địa chỉ IP
 `crm configure colocation apache-with-IP inf: p_apache p_IP`
 
-apache start trên node đặt địa chỉ IP
-
-`crm configure colocation mysql-with-IP inf: p_mysql p_IP`
-
-MySQL-Server Start trên node đặt địa chỉ IP
-
-`crm configure order fs-after-drbd inf: ms_drbd_data:promote p_fs_data:start`
-
-Mount sau khi start DRBD webdata
-
-`crm configure order mysql-after-drbd inf: ms_drbd_mysql:promote p_fs_mysql:start`
-
-Mount sau khi start DRBD MySQL
 
 
-Để dữ liệu được đồng bộ giữa 2 node đầy đủ thì ta cần cấu hình cho các resource không được di chuyển sang node khác khi node đó được phục hồi
+
+- Để dữ liệu được đồng bộ giữa 2 node đầy đủ thì ta cần cấu hình cho các resource không được di chuyển sang node khác khi node đó được phục hồi
 
 `crm configure rsc_defaults resource-stickiness=100`
 
@@ -672,28 +672,3 @@ Bài viết trên mình đã giới thiệu tổng quan về Pacemaker và cách
 **Người viết: Sa Phi**
 
 *Email: saphi070@gmail.com*
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	
-	
-
-
