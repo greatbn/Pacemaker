@@ -587,11 +587,23 @@ Trên 1 node thực hiện tạo các resource Virtual IP, apache, mysql và Fil
 `crm configure primitive p_IP ocf:heartbeat:IPaddr2 params ip="10.10.10.30" cidr_netmask="24" nic="eth0" op monitor interval="30s"`
 
 
+Tạo resource mysql để pacemaker quản lý
+
+`crm configure primitive p_mysql ocf:heartbeat:mysql params additional_parameters="--bind-address=10.10.10.30" config="/etc/mysql/my.cnf" pid="/var/run/mysqld/mysqld.pid" socket="/var/run/mysqld/mysqld.sock" log="/var/log/mysql/mysqld.log" datadir="/mnt/database/"op monitor interval="20s" timeout="10s" op start timeout="120s" op stop timeout="120s"`
+
+
+- Tạo resource apache để pacemaker manage apache
+
+`crm configure primitive p_apache ocf:heartbeat:apache params configfile="/etc/apache2/apache2.conf" port="80" op monitor interval="30s" op start interval="0s" timeout="40s" op stop interval="0s" timeout="40s"``
+
 
 
 ####Cấu hình DRBD Resource
 
+
 #####MySQL
+
+
 
 - Tại shell gõ `crm`
  
@@ -613,24 +625,16 @@ cib commit mysql
 - Tại shell gõ `crm`
 
 ```
+cib new apache
 configure primitive p_drbd_data ocf:linbit:drbd params drbd_resource="webdata" op monitor interval="3s"
 configure primitive p_fs_data ocf:heartbeat:Filesystem params device="/dev/drbd1" directory="/mnt/web" fstype="ext4" op start interval="0s" timeout="40s" op stop interval="0s" timeout="40s" op monitor interval="3s
 configure ms ms_drbd_data p_drbd_data meta master-max="1"  master-node-max="1" clone-max="2" clone-node-max="1" notify="true"
 configure order fs-after-drbd inf: ms_drbd_data:promote p_fs_data:start
 configure colocation fs-on-drbd inf: p_fs_data ms_drbd_data:Master
-
+cib comit apache
 
 ```
 
-
-Tạo resource mysql để pacemaker quản lý
-
-`crm configure primitive p_mysql ocf:heartbeat:mysql params additional_parameters="--bind-address=10.10.10.30" config="/etc/mysql/my.cnf" pid="/var/run/mysqld/mysqld.pid" socket="/var/run/mysqld/mysqld.sock" log="/var/log/mysql/mysqld.log" datadir="/mnt/database/"op monitor interval="20s" timeout="10s" op start timeout="120s" op stop timeout="120s"`
-
-
-- Tạo resource apache để pacemaker manage apache
-
-`crm configure primitive p_apache ocf:heartbeat:apache params configfile="/etc/apache2/apache2.conf" port="80" op monitor interval="30s" op start interval="0s" timeout="40s" op stop interval="0s" timeout="40s"``
 
 
 - Group 2 FS để start trên cùng 1 node
