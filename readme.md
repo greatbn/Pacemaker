@@ -589,7 +589,7 @@ Trên 1 node thực hiện tạo các resource Virtual IP, apache, mysql và Fil
 
 Tạo resource mysql để pacemaker quản lý
 
-`crm configure primitive p_mysql ocf:heartbeat:mysql params additional_parameters="--bind-address=10.10.10.30" config="/etc/mysql/my.cnf" pid="/var/run/mysqld/mysqld.pid" socket="/var/run/mysqld/mysqld.sock" log="/var/log/mysql/mysqld.log" datadir="/mnt/database/"op monitor interval="20s" timeout="10s" op start timeout="120s" op stop timeout="120s"`
+`crm configure primitive p_mysql ocf:heartbeat:mysql params additional_parameters="--bind-address=10.10.10.30" config="/etc/mysql/my.cnf" pid="/var/run/mysqld/mysqld.pid" socket="/var/run/mysqld/mysqld.sock" log="/var/log/mysql/mysqld.log" datadir="/mnt/database/" op monitor interval="20s" timeout="10s" op start timeout="120s" op stop timeout="120s"`
 
 
 - Tạo resource apache để pacemaker manage apache
